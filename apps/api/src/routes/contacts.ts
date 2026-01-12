@@ -291,4 +291,45 @@ export async function contactRoutes(fastify: FastifyInstance) {
 
         return { success: true, data: result.rows[0] };
     });
+
+    /**
+     * POST /contacts/sync-from-phone - Sync contacts from connected phone
+     * This will scrape contacts from Google Messages and import them
+     */
+    fastify.post('/sync-from-phone', {
+        preHandler: [requirePermission('contacts:import')]
+    }, async (request: FastifyRequest, reply) => {
+        // Check if session is connected
+        const session = await fastify.db.query(
+            `SELECT status FROM sessions WHERE tenant_id = $1`,
+            [request.tenantId]
+        );
+
+        if (session.rows.length === 0 || session.rows[0].status !== 'connected') {
+            return reply.status(400).send({
+                success: false,
+                error: 'Session not connected. Please connect to Google Messages first.'
+            });
+        }
+
+        // Enqueue sync job
+        const jobId = await fastify.queue.send('sync-contacts', {
+            tenantId: request.tenantId,
+            maxContacts: 500
+        });
+
+        // Audit log
+        await fastify.db.query(
+            `INSERT INTO audit_logs (tenant_id, user_id, action, resource_type, details)
+       VALUES ($1, $2, $3, $4, $5)`,
+            [request.tenantId, request.user!.sub, 'sync_from_phone', 'contact', JSON.stringify({ jobId })]
+        );
+
+        return {
+            success: true,
+            message: 'Contact sync started. This may take a few minutes.',
+            data: { jobId }
+        };
+    });
 }
+

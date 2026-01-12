@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Users, Plus, Upload, Search, Trash2, Loader2, Tag, Ban } from 'lucide-react';
+import { Users, Plus, Upload, Search, Trash2, Loader2, Tag, Ban, Smartphone } from 'lucide-react';
 import { api } from '../lib/api';
 
 interface Contact {
@@ -14,6 +14,7 @@ interface Contact {
 export default function Contacts() {
     const [contacts, setContacts] = useState<Contact[]>([]);
     const [loading, setLoading] = useState(true);
+    const [syncing, setSyncing] = useState(false);
     const [search, setSearch] = useState('');
     const [page, setPage] = useState(1);
     const [total, setTotal] = useState(0);
@@ -59,6 +60,24 @@ export default function Contacts() {
         }
     };
 
+    const handleSyncFromPhone = async () => {
+        if (syncing) return;
+
+        if (!confirm('Isso irá importar os contatos do telefone conectado. Pode levar alguns minutos. Continuar?')) {
+            return;
+        }
+
+        setSyncing(true);
+        try {
+            await api.post('/contacts/sync-from-phone');
+            alert('Sincronização iniciada! Os contatos serão importados em alguns minutos. Atualize a página depois.');
+        } catch (err: any) {
+            alert(err.response?.data?.error || 'Erro ao iniciar sincronização');
+        } finally {
+            setSyncing(false);
+        }
+    };
+
     return (
         <div className="space-y-6 fade-in">
             {/* Header */}
@@ -67,7 +86,20 @@ export default function Contacts() {
                     <h1 className="text-2xl font-bold">Contatos</h1>
                     <p className="text-slate-400">{total} contatos cadastrados</p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
+                    <button
+                        onClick={handleSyncFromPhone}
+                        disabled={syncing}
+                        className="btn btn-secondary"
+                        title="Importar contatos do telefone conectado"
+                    >
+                        {syncing ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                            <Smartphone className="w-4 h-4" />
+                        )}
+                        {syncing ? 'Sincronizando...' : 'Do Telefone'}
+                    </button>
                     <button onClick={() => setShowImportModal(true)} className="btn btn-secondary">
                         <Upload className="w-4 h-4" />
                         Importar

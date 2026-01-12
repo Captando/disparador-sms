@@ -3,6 +3,7 @@ import PgBoss from 'pg-boss';
 import { GoogleMessagesClient } from './drivers/google-messages.js';
 import { handleSendMessage } from './jobs/send-message.js';
 import { handleSessionConnect, handleSessionDisconnect } from './jobs/session.js';
+import { handleSyncContacts } from './jobs/sync-contacts.js';
 import type { MessageJob } from '@sms/shared';
 
 const { Pool } = pg;
@@ -62,6 +63,13 @@ async function main() {
     await boss.work<MessageJob>('send-message', { teamSize: config.maxConcurrentTenants }, async (job) => {
         console.log(`📤 Processing send-message ${job.data.messageId}`);
         await handleSendMessage(job.data, { db, sessions, config });
+    });
+
+    // Contact sync from phone handler
+    await boss.work('sync-contacts', { teamSize: 1 }, async (job) => {
+        console.log(`📇 Processing sync-contacts for tenant ${job.data.tenantId}`);
+        const result = await handleSyncContacts(job.data, { db, sessions, config });
+        return result;
     });
 
     // Health check - reconnect disconnected sessions periodically

@@ -424,6 +424,131 @@ export class GoogleMessagesClient {
     }
 
     /**
+     * Scrape contacts from the connected phone
+     * Goes to new conversation screen and extracts contact suggestions
+     */
+    async scrapeContacts(maxContacts: number = 500): Promise<{ name: string; phone: string }[]> {
+        if (!this.page || !this.isReady) {
+            throw new Error('Session not ready');
+        }
+
+        console.log(`[${this.tenantId}] Starting contact scraping...`);
+        const contacts: { name: string; phone: string }[] = [];
+        const seenPhones = new Set<string>();
+
+        try {
+            // Navigate to new conversation
+            await this.page.goto('https://messages.google.com/web/conversations/new', {
+                waitUntil: 'networkidle',
+                timeout: 30000,
+            });
+
+            // Wait for contact list to load
+            await this.page.waitForTimeout(2000);
+
+            // Find the contact list container
+            const contactListSelectors = [
+                'mws-contact-selector-button',
+                '[data-e2e-contact-row]',
+                '.contact-list-item',
+                'mws-contact-row',
+            ];
+
+            let contactElements: any[] = [];
+
+            // Try different selectors
+            for (const selector of contactListSelectors) {
+                contactElements = await this.page.$$(selector);
+                if (contactElements.length > 0) {
+                    console.log(`[${this.tenantId}] Found ${contactElements.length} contacts with selector: ${selector}`);
+                    break;
+                }
+            }
+
+            // If no contacts found with specific selectors, try generic approach
+            if (contactElements.length === 0) {
+                // Look for any clickable contact items
+                contactElements = await this.page.$$('[role="listitem"], [role="option"]');
+            }
+
+            let scrollAttempts = 0;
+            const maxScrollAttempts = 20;
+
+            while (contacts.length < maxContacts && scrollAttempts < maxScrollAttempts) {
+                // Extract contact info from visible elements
+                for (const element of contactElements) {
+                    try {
+                        // Try to get name and phone from the element
+                        const textContent = await element.textContent();
+                        if (!textContent) continue;
+
+                        // Try to find phone number in the text (E.164 or formatted)
+                        const phoneMatch = textContent.match(/\+?\d[\d\s\-()]{8,}/);
+                        const phone = phoneMatch ? phoneMatch[0].replace(/[\s\-()]/g, '') : null;
+
+                        if (!phone || seenPhones.has(phone)) continue;
+
+                        // Get the name (usually the first line of text)
+                        const lines = textContent.trim().split('\n').map(l => l.trim()).filter(l => l);
+                        const name = lines[0] || 'Sem nome';
+
+                        // Normalize phone to E.164
+                        let normalizedPhone = phone;
+                        if (!normalizedPhone.startsWith('+')) {
+                            normalizedPhone = '+' + normalizedPhone;
+                        }
+
+                        // Basic validation
+                        if (normalizedPhone.length >= 10 && normalizedPhone.length <= 16) {
+                            contacts.push({ name, phone: normalizedPhone });
+                            seenPhones.add(phone);
+                            console.log(`[${this.tenantId}] Found contact: ${name} - ${normalizedPhone}`);
+                        }
+                    } catch (err) {
+                        // Skip this element and continue
+                    }
+                }
+
+                // Scroll down to load more contacts
+                await this.page.evaluate(() => {
+                    const scrollable = document.querySelector('[role="listbox"], .contact-list, mws-contact-selector');
+                    if (scrollable) {
+                        scrollable.scrollTop += 500;
+                    } else {
+                        window.scrollBy(0, 500);
+                    }
+                });
+
+                await this.page.waitForTimeout(1000);
+
+                // Re-fetch contact elements after scroll
+                for (const selector of contactListSelectors) {
+                    const newElements = await this.page.$$(selector);
+                    if (newElements.length > contactElements.length) {
+                        contactElements = newElements;
+                        break;
+                    }
+                }
+
+                scrollAttempts++;
+
+                // Check if we've stopped finding new contacts
+                if (contacts.length === seenPhones.size && scrollAttempts > 5) {
+                    console.log(`[${this.tenantId}] No new contacts found after scrolling, stopping...`);
+                    break;
+                }
+            }
+
+            console.log(`[${this.tenantId}] Scraping complete. Found ${contacts.length} contacts.`);
+            return contacts;
+
+        } catch (err) {
+            console.error(`[${this.tenantId}] Contact scraping error:`, err);
+            throw err;
+        }
+    }
+
+    /**
      * Close the browser
      */
     async close(): Promise<void> {
