@@ -1,0 +1,26 @@
+{
+    "name": "@sms/worker",
+    "version": "1.0.0",
+    "type": "module",
+    "main": "./dist/index.js",
+    "scripts": {
+        "build": "tsc",
+        "dev": "tsx watch src/index.ts",
+        "start": "node dist/index.js",
+        "test": "vitest"
+    },
+    "dependencies": {
+        "@sms/shared": "*",
+        "pg": "^8.11.3",
+        "pg-boss": "^9.0.3",
+        "playwright": "^1.41.1",
+        "axios": "^1.6.5"
+    },
+    "devDependencies": {
+        "@types/node": "^20.11.5",
+        "@types/pg": "^8.10.9",
+        "tsx": "^4.7.0",
+        "typescript": "^5.3.3",
+        "vitest": "^1.2.1"
+    }
+}

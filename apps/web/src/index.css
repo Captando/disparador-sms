@@ -1,0 +1,144 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-bg-primary: #0f172a;
+  --color-bg-secondary: #1e293b;
+  --color-bg-tertiary: #334155;
+  --color-text-primary: #f8fafc;
+  --color-text-secondary: #94a3b8;
+  --color-accent: #0ea5e9;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  color: var(--color-text-primary);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-bg-tertiary);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
+/* Glass effect */
+.glass {
+  background: rgba(30, 41, 59, 0.7);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Card styles */
+.card {
+  @apply glass rounded-xl p-6;
+}
+
+/* Button base */
+.btn {
+  @apply px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2;
+}
+
+.btn-primary {
+  @apply bg-primary-500 hover:bg-primary-600 text-white shadow-lg shadow-primary-500/25;
+}
+
+.btn-secondary {
+  @apply bg-slate-700 hover:bg-slate-600 text-white;
+}
+
+.btn-danger {
+  @apply bg-red-500 hover:bg-red-600 text-white;
+}
+
+/* Input styles */
+.input {
+  @apply w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-lg 
+         text-white placeholder-slate-400 
+         focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent
+         transition-all duration-200;
+}
+
+/* Table styles */
+.table {
+  @apply w-full text-left;
+}
+
+.table th {
+  @apply px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider border-b border-slate-700;
+}
+
+.table td {
+  @apply px-4 py-3 border-b border-slate-800;
+}
+
+.table tr:hover td {
+  @apply bg-slate-800/50;
+}
+
+/* Status badges */
+.badge {
+  @apply px-2.5 py-1 text-xs font-medium rounded-full;
+}
+
+.badge-success {
+  @apply bg-emerald-500/20 text-emerald-400;
+}
+
+.badge-warning {
+  @apply bg-yellow-500/20 text-yellow-400;
+}
+
+.badge-danger {
+  @apply bg-red-500/20 text-red-400;
+}
+
+.badge-info {
+  @apply bg-blue-500/20 text-blue-400;
+}
+
+.badge-neutral {
+  @apply bg-slate-500/20 text-slate-400;
+}
+
+/* Animations */
+@keyframes pulse-ring {
+  0% { transform: scale(0.8); opacity: 1; }
+  100% { transform: scale(1.5); opacity: 0; }
+}
+
+.pulse-ring {
+  animation: pulse-ring 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in {
+  animation: fade-in 0.3s ease-out forwards;
+}
